@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  
+    <node name="px4_planner" pkg="px4_planner" type="planner.py" output="screen">
+        <param name="altitude" type="int" value="1" />
+        <param name="nearest_goal_offset" type="double" value="1.5" />
+        <param name="nearest_goal_min" type="double" value="2.5" />
+        <param name="final_goal_resolution" type="double" value="0.1" />
+        <param name="interm_goal_resolution" type="double" value="0.5" />
+        <param name="inflation_line_segement" type="double" value="1.0" />
+        <param name="interm_goal_distance" type="double" value="2.0" />
+    </node>
+
+</launch>

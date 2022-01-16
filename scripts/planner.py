@@ -45,27 +45,27 @@ class Planner:
         self.current_goal = []
         self.obstacle_obstruct = False
         self.roam = False
-
-        self.debug_x = 0
-        self.debug_y = 0
-        self.debug_cur_loc_x = 0
-        self.debug_cur_loc_y  = 0
+        self.nearest_goal_offset = rospy.get_param("~nearest_goal_offset")
+        self.nearest_goal_min = rospy.get_param("~nearest_goal_min")
+        self.interm_goal_resolution = rospy.get_param("~interm_goal_resolution")
+        self.final_goal_resolution = rospy.get_param("~final_goal_resolution")
+        self.inflation_line_segement = rospy.get_param("~inflation_line_segement")
+        self.interm_goal_distance = rospy.get_param("~interm_goal_distance")
 
     def current_goal_reached(self):
 
         if(len(self.current_goal)):
-            if((abs(self.current_goal[0] - self.current_loc[0])) < 0.5 and (abs(self.current_goal[1] - self.current_loc[1]) < 0.5)):
+            if((abs(self.current_goal[0] - self.current_loc[0])) < self.interm_goal_resolution and (abs(self.current_goal[1] - self.current_loc[1]) < self.interm_goal_resolution)):
                 return True
             else: 
                 return False
 
         return False
 
-
     def final_goal_reached(self):
 
         if(len(self.goal)):
-            if((abs(self.goal[0] - self.current_loc[0])) < 0.1 and (abs(self.goal[1] - self.current_loc[1]) < 0.1)):
+            if((abs(self.goal[0] - self.current_loc[0])) < self.final_goal_resolution and (abs(self.goal[1] - self.current_loc[1]) < self.final_goal_resolution)):
                 return True
             else: 
                 return False
@@ -79,42 +79,39 @@ class Planner:
 
         nearest = []
         while(self.final_goal_reached() == False):
-            print("############# final goal not reached refresing obstacle list.............")
             current_num_obstacles = len(self.obstacles)
             obstacles = self.obstacles
             if(current_num_obstacles):
                 for i in range(0, current_num_obstacles, 2):
-                    print("###### obstacles : {}".format(obstacles))
-                    print("###### obst: {} obst1: {} goal1: {} goal2: {}".format(obstacles[i][:-1], obstacles[i+1][:-1], self.goal[:-1], self.current_loc[:-1]))
+                    # print("###### obst: {} obst1: {} goal1: {} goal2: {}".format(obstacles[i][:-1], obstacles[i+1][:-1], self.goal[:-1], self.current_loc[:-1]))
 
-                    if(self.doIntersect([obstacles[i], self.goal[:-1], obstacles[i+1], self.current_loc[:-1]]) == True):
-                        print("Goal Intersects")
-
-                        print("####### Intersecting obstacle: 1: {} 2: {}".format(obstacles[i], obstacles[i+1]))
+                    if(self.doGoalIntersect([obstacles[i], self.goal[:-1], obstacles[i+1], self.current_loc[:-1]]) == True):
+                        # print("Goal Intersects")
+                        # print("####### Intersecting obstacle: 1: {} 2: {}".format(obstacles[i], obstacles[i+1]))
+                        
                         nearest = self.nearestPoint(self.current_loc[:-1], obstacles[i][:-1], obstacles[i+1][:-1])  
 
-                        print("nearest point: {}".format(nearest))
-
-                        print("##### slope: {}".format(self.get_slope(self.obstacles[i], self.obstacles[i+1])))
+                        # print("nearest point: {}".format(nearest))
+                        # print("##### slope: {}".format(self.get_slope(self.obstacles[i], self.obstacles[i+1])))
 
                         if((abs(self.get_slope(self.obstacles[i], self.obstacles[i+1])) < 45) and (abs(nearest[0]-self.current_loc[0]) > 0.2)):
-                            print("### achieving x first")
+                            # print("### achieving x first")
                             self.drone.cmd.pose.position.x = nearest[0]
                             self.current_goal = [self.drone.cmd.pose.position.x, self.current_loc[1]]
 
                         elif((abs(self.get_slope(self.obstacles[i], self.obstacles[i+1])) >= 45) and (abs(nearest[1]-self.current_loc[1]) > 0.2)):
-                            print("### achieving y first")
+                            # print("### achieving y first")
                             self.drone.cmd.pose.position.y = nearest[1]
                             self.current_goal = [self.current_loc[0], self.drone.cmd.pose.position.y]
 
-                        print("### current goal : {}".format(self.current_goal))
+                        # print("### current goal : {}".format(self.current_goal))
 
                         while(self.current_goal_reached() == False):
                             time.sleep(0.1)
 
-                        print("####### acheived one of the coordinates")
+                        # print("####### acheived one of the coordinates")
                         
-                        time.sleep(2)
+                        time.sleep(0.2)
 
                         self.drone.cmd.pose.position.x = nearest[0]
                         self.drone.cmd.pose.position.y = nearest[1]
@@ -124,33 +121,28 @@ class Planner:
                         while(not self.current_goal_reached()):
                             time.sleep(0.1)
 
-                        print("###### acheived final coordinate")
+                        # print("###### acheived final coordinate")
 
                         self.obstacle_obstruct = True
-                        
-                        print("goal reached")
                         time.sleep(0.1)
-
-                        print("################################## breaking ################################")
                         break
 
                     else:
                         self.obstacle_obstruct = False
                 
-                if(self.getDistance(self.current_loc, self.goal) > 2.5 and self.obstacle_obstruct == False):
+                if(self.getDistance(self.current_loc, self.goal) > self.nearest_goal_min and self.obstacle_obstruct == False):
 
                     lenAB = math.sqrt(math.pow(self.current_loc[0] - self.goal[0], 2.0) + math.pow(self.current_loc[1] - self.goal[1], 2.0))
 
-                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * 2.0
-                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * 2.0
+                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * self.interm_goal_distance
+                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * self.interm_goal_distance
 
-                    print("#### going half way#################")
                     self.drone.cmd.pose.position.x = c_x
                     self.drone.cmd.pose.position.y = c_y
 
                     self.current_goal = [self.drone.cmd.pose.position.x, self.drone.cmd.pose.position.y]
 
-                    print("##### going half way current goal {} goal: {} current_loc: {}".format(self.current_goal, self.goal, self.current_loc))
+                    # print("##### going half way current goal {} goal: {} current_loc: {}".format(self.current_goal, self.goal, self.current_loc))
 
                     while(not self.current_goal_reached()):
                         time.sleep(0.1)
@@ -161,60 +153,34 @@ class Planner:
                     self.roam = False
 
                 if(self.obstacle_obstruct == False and self.roam == False):
-                    print("############## going for final goal ##############################")
+                    # print("############## going for final goal ##############################")
                     self.drone.cmd.pose.position.x = self.goal[0] 
                     self.drone.cmd.pose.position.y = self.goal[1]
                     
                     self.current_goal = self.goal[:-1]
 
-
                     while(not self.current_goal_reached()):
                         time.sleep(1)
 
-                    print("goal reached")
+                    # print("goal reached")
 
         self.execute_goal_th_status = False
-        print("goal completed")
-        # features = Marker()
-        # features.header.frame_id = "rplidar_link"
-        # features.type = features.POINTS
-        # features.action = features.ADD
-        # features.pose.orientation.w = 1
-        # if(len(nearest) == 2):
-        #     features.points = [Point(self.goal[0], self.goal[1], self.goal[2]), Point(nearest[0], nearest[1], 0.0)]
-        # else:
-        #     features.points = [Point(self.goal[0], self.goal[1], self.goal[2])]
-        # t = rospy.Duration(20)
-        # features.lifetime = t
-        # features.scale.x = 0.4
-        # features.scale.y = 0.4
-        # features.scale.z = 0.0
-        # features.color.a = 0.7
-        # features.color.r = 1.0
-        # features.color.g = 1.0
-        # features.color.b = 1.0
-        # self.goal_marker.publish(features)
-        
-        # time.sleep(1)
-        # while not self.goal_reached():
-        #     time.sleep(1)
+        # print("goal completed")
+        rospy.loginfo("[PX4_PLANNER] Goal Completed :)")
 
-        # print("goal reached")
-            
     def nearestPoint(self, loc, point1, point2):
         distance1 = self.getDistance(loc, point1)
         distance2 = self.getDistance(loc, point2)
 
         if(point2[1] < 0):
-            point2[1] = point2[1] - 1.5
+            point2[1] = point2[1] - self.nearest_goal_offset
         else:
-            point2[1] = point2[1] + 1.5
-
+            point2[1] = point2[1] + self.nearest_goal_offset
 
         if(point1[1] < 0):
-            point1[1] = point1[1] - 1.5
+            point1[1] = point1[1] - self.nearest_goal_offset
         else:
-            point1[1] = point1[1] + 1.5
+            point1[1] = point1[1] + self.nearest_goal_offset
 
         if(distance1 > distance2):
             if(point2[1] < 0):
@@ -231,10 +197,9 @@ class Planner:
 
     def goal(self, req):
 
-        print("req: {} {}".format(req.x, req.y, req.z))
-
+        rospy.loginfo("[PX4_PLANNER] Goal Request Received - x : %f y: %f", req.x, req.y)
+        
         self.obstacle_obstruct = False
-
 
         if(self.execute_goal_th_status == False):
             self.execute_goal_th = threading.Thread(target=self.execute_goal)
@@ -327,50 +292,20 @@ class Planner:
             for itr in n_lines:
                 for key, values in itr.items():
 
-
                     y1_ = (data.ranges[values]*math.sin(math.radians(values))) - self.current_loc[1]
                     x1_ = (data.ranges[values]*math.cos(math.radians(values))) - self.current_loc[0]
 
-                    if(abs(self.debug_x) - abs(x1_) > 0.5 or abs(self.debug_y) - abs(y1_) > 0.5):
-                        self.debug_x = data.ranges[values]*math.cos(math.radians(values))
-                        self.debug_y = data.ranges[values]*math.sin(math.radians(values))
-                        self.debug_cur_loc_x = self.current_loc[1]
-                        self.debug_cur_loc_y = self.current_loc[0]
-
-                        print("x_raw_data: {} current_loc: {} ".format(data.ranges[values]*math.cos(math.radians(values)), self.current_loc[1]))
-                        print("y_raw_data: {} current_loc: {} ".format(data.ranges[values]*math.sin(math.radians(values)), self.current_loc[0]))
-
-                    # if(y1_ < 0):
-                    #     y1_ = y1_ + abs(self.current_loc[1])
-                    #     # y1_ = y1_ - 1
-                    # else:
-                    #     y1_ = y1_ - abs(self.current_loc[1])
-                    #     # y1_ = y1_ + 1
-
-
-                    # if(x1_ < 0):
-                    #     x1_ = x1_ + abs(self.current_loc[0]) 
-                    #     # x1_ = x1_ - 1
-                    # else:
-                    #     x1_ = x1_ - abs(self.current_loc[0]) 
-                        # x1_ = x1_ + 1
-
-                    # print("line cordinated: {}".format([-y1_, -x1_]))
                     self.obstacles.append([-x1_, -y1_, 0.0])
-                    # feat_points.append(Point(-x1_, -y1_, 0.0))    
-        # print("###############################")
-        # print("feature points:{}".format(feat_points))
 
         for i in range(0, len(self.obstacles), 2):
 
             lenAB = math.sqrt(math.pow(self.obstacles[i][0] - self.obstacles[i+1][0], 2.0) + math.pow(self.obstacles[i][1] - self.obstacles[i+1][1], 2.0))
 
-            c_x = self.obstacles[i+1][0] + (self.obstacles[i+1][0] - self.obstacles[i][0]) / lenAB * 1.0
-            c_y = self.obstacles[i+1][1] + (self.obstacles[i+1][1] - self.obstacles[i][1]) / lenAB * 1.0
+            c_x = self.obstacles[i+1][0] + (self.obstacles[i+1][0] - self.obstacles[i][0]) / lenAB * self.inflation_line_segement
+            c_y = self.obstacles[i+1][1] + (self.obstacles[i+1][1] - self.obstacles[i][1]) / lenAB * self.inflation_line_segement
 
-
-            d_x = self.obstacles[i][0] + (self.obstacles[i][0] - self.obstacles[i+1][0]) / lenAB * 1.0
-            d_y = self.obstacles[i][1] + (self.obstacles[i][1] - self.obstacles[i+1][1]) / lenAB * 1.0
+            d_x = self.obstacles[i][0] + (self.obstacles[i][0] - self.obstacles[i+1][0]) / lenAB * self.inflation_line_segement
+            d_y = self.obstacles[i][1] + (self.obstacles[i][1] - self.obstacles[i+1][1]) / lenAB * self.inflation_line_segement
 
             self.obstacles[i][0] = c_x
             self.obstacles[i][1] = c_y
@@ -380,7 +315,6 @@ class Planner:
 
         for i in range(len(self.obstacles)):
             feat_points.append(Point(self.obstacles[i][0], self.obstacles[i][1], self.obstacles[i][2]))
-
 
         features = Marker()
         features.header.frame_id = "rplidar_link"
@@ -398,7 +332,6 @@ class Planner:
         features.color.g = 1.0
         features.color.b = 0.0
         self.features_pub.publish(features)
-
 
     # Line intersections tools
 
@@ -419,7 +352,7 @@ class Planner:
         else:
             return 0
 
-    def doIntersect(self, points):
+    def doGoalIntersect(self, points):
         
         o1 = self.orientation(points[0], points[2], points[1])
         o2 = self.orientation(points[0], points[2], points[3])
@@ -446,13 +379,22 @@ class Planner:
 
 if __name__ == '__main__':
     rospy.init_node('px4_planner', anonymous=True)
+
+    altitude = rospy.get_param("~altitude")
+
     DroneObj = DroneControl()
     plannerObj = Planner(DroneObj)
-    DroneObj.cmd.pose.position.z = 1.0
+    
+    DroneObj.cmd.pose.position.z = altitude
     DroneObj.arm(True)
+    
     time.sleep(1)
+    
     DroneObj.setMode()
-    r = rospy.Rate(20) # 10hz 
+    r = rospy.Rate(20) 
+    
+    rospy.loginfo("[PX4_PLANNER] Planner has been initialised")
+
     while not rospy.is_shutdown():
         DroneObj.goal_loc_pub.publish(DroneObj.cmd)
         r.sleep()
