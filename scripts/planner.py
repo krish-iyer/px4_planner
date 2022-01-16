@@ -35,7 +35,7 @@ class Planner:
         self.features_pub = rospy.Publisher("/features/marker", Marker, queue_size=1)
         self.robot_pose_marker = rospy.Publisher("/features/robot_marker", Marker, queue_size=1)
         self.goal_marker = rospy.Publisher("/features/goal_marker", Marker, queue_size=1)
-        self.target_srv = rospy.Service('/aepl_planner/target', target, self.goal)
+        self.target_srv = rospy.Service('/px4_planner/target', target, self.goal)
         self.obstacles = [[]]
         self.goal = []
         self.drone = drone
@@ -455,7 +455,7 @@ class Planner:
 
 
 if __name__ == '__main__':
-    rospy.init_node('aepl_planner', anonymous=True)
+    rospy.init_node('px4_planner', anonymous=True)
     DroneObj = DroneControl()
     plannerObj = Planner(DroneObj)
     # while(len(plannerObj.current_loc) == 0):
