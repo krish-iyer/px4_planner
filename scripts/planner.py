@@ -83,34 +83,21 @@ class Planner:
             obstacles = self.obstacles
             if(current_num_obstacles):
                 for i in range(0, current_num_obstacles, 2):
-                    # print("###### obst: {} obst1: {} goal1: {} goal2: {}".format(obstacles[i][:-1], obstacles[i+1][:-1], self.goal[:-1], self.current_loc[:-1]))
 
                     if(self.doGoalIntersect([obstacles[i], self.goal[:-1], obstacles[i+1], self.current_loc[:-1]]) == True):
-                        # print("Goal Intersects")
-                        # print("####### Intersecting obstacle: 1: {} 2: {}".format(obstacles[i], obstacles[i+1]))
-                        
                         nearest = self.nearestPoint(self.current_loc[:-1], obstacles[i][:-1], obstacles[i+1][:-1])  
 
-                        # print("nearest point: {}".format(nearest))
-                        # print("##### slope: {}".format(self.get_slope(self.obstacles[i], self.obstacles[i+1])))
-
                         if((abs(self.get_slope(self.obstacles[i], self.obstacles[i+1])) < 45) and (abs(nearest[0]-self.current_loc[0]) > 0.2)):
-                            # print("### achieving x first")
                             self.drone.cmd.pose.position.x = nearest[0]
                             self.current_goal = [self.drone.cmd.pose.position.x, self.current_loc[1]]
 
                         elif((abs(self.get_slope(self.obstacles[i], self.obstacles[i+1])) >= 45) and (abs(nearest[1]-self.current_loc[1]) > 0.2)):
-                            # print("### achieving y first")
                             self.drone.cmd.pose.position.y = nearest[1]
                             self.current_goal = [self.current_loc[0], self.drone.cmd.pose.position.y]
-
-                        # print("### current goal : {}".format(self.current_goal))
 
                         while(self.current_goal_reached() == False):
                             time.sleep(0.1)
 
-                        # print("####### acheived one of the coordinates")
-                        
                         time.sleep(0.2)
 
                         self.drone.cmd.pose.position.x = nearest[0]
@@ -120,8 +107,6 @@ class Planner:
 
                         while(not self.current_goal_reached()):
                             time.sleep(0.1)
-
-                        # print("###### acheived final coordinate")
 
                         self.obstacle_obstruct = True
                         time.sleep(0.1)
@@ -142,8 +127,6 @@ class Planner:
 
                     self.current_goal = [self.drone.cmd.pose.position.x, self.drone.cmd.pose.position.y]
 
-                    # print("##### going half way current goal {} goal: {} current_loc: {}".format(self.current_goal, self.goal, self.current_loc))
-
                     while(not self.current_goal_reached()):
                         time.sleep(0.1)
 
@@ -153,7 +136,6 @@ class Planner:
                     self.roam = False
 
                 if(self.obstacle_obstruct == False and self.roam == False):
-                    # print("############## going for final goal ##############################")
                     self.drone.cmd.pose.position.x = self.goal[0] 
                     self.drone.cmd.pose.position.y = self.goal[1]
                     
@@ -162,10 +144,7 @@ class Planner:
                     while(not self.current_goal_reached()):
                         time.sleep(1)
 
-                    # print("goal reached")
-
         self.execute_goal_th_status = False
-        # print("goal completed")
         rospy.loginfo("[PX4_PLANNER] Goal Completed :)")
 
     def nearestPoint(self, loc, point1, point2):
@@ -228,7 +207,6 @@ class Planner:
                     if(chk == (e_c-1)):
                         lines.append({"a":e , "b":e_c})
 
-        # check for stiching
         for line in range(len(lines)):
             for it_r in range(len(lines)):
                 if(line != it_r):
@@ -248,23 +226,6 @@ class Planner:
     def pose_callback(self, data):
         
         self.current_loc = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
-        features = Marker()
-        features.header.frame_id = "rplidar_link"
-        features.type = features.POINTS
-        features.action = features.ADD
-        features.pose.orientation = data.pose.orientation
-        features.points = [data.pose.position]
-        t = rospy.Duration(3)
-        features.lifetime = t
-        features.scale.x = 0.2
-        features.scale.y = 0.2
-        features.scale.z = 0.0
-        features.color.a = 0.7
-        features.color.r = 1.0
-        features.color.g = 0.0
-        features.color.b = 0.0
-
-        self.robot_pose_marker.publish(features)
 
     def laser_callback(self, data):
         
@@ -285,8 +246,7 @@ class Planner:
         
         n_lines = self.detect_lines(edges, data)
         
-        # print("scan time: {} index: {} pos - x: {} y: {} lines: {}".format(min_val, min_val_index, x, y, n_lines))
-        # print("lenght of lines: {}".format(len(n_lines)))
+
         if(len(n_lines) != 0):
             self.obstacles = []
             for itr in n_lines:
@@ -316,24 +276,6 @@ class Planner:
         for i in range(len(self.obstacles)):
             feat_points.append(Point(self.obstacles[i][0], self.obstacles[i][1], self.obstacles[i][2]))
 
-        features = Marker()
-        features.header.frame_id = "rplidar_link"
-        features.type = features.POINTS
-        features.action = features.ADD
-        features.pose.orientation.w = 1
-        features.points = feat_points
-        t = rospy.Duration(3)
-        features.lifetime = t
-        features.scale.x = 0.2
-        features.scale.y = 0.2
-        features.scale.z = 0.0
-        features.color.a = 0.7
-        features.color.r = 0.0
-        features.color.g = 1.0
-        features.color.b = 0.0
-        self.features_pub.publish(features)
-
-    # Line intersections tools
 
     def onSegment(self, p, q, r):
         if ( (q.x <= max(p[0], r[0])) and (q[0] >= min(p[0], r[0])) and 
