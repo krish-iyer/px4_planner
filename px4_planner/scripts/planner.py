@@ -122,8 +122,8 @@ class Planner:
 
                     lenAB = math.sqrt(math.pow(self.current_loc[0] - self.goal[0], 2.0) + math.pow(self.current_loc[1] - self.goal[1], 2.0))
 
-                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * self.interm_goal_distance
-                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * self.interm_goal_distance
+                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * 2.0
+                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * 2.0
 
                     self.drone.cmd.pose.position.x = c_x
                     self.drone.cmd.pose.position.y = c_y
@@ -304,11 +304,11 @@ class Planner:
 
             lenAB = math.sqrt(math.pow(self.obstacles[i][0] - self.obstacles[i+1][0], 2.0) + math.pow(self.obstacles[i][1] - self.obstacles[i+1][1], 2.0))
 
-            c_x = self.obstacles[i+1][0] + (self.obstacles[i+1][0] - self.obstacles[i][0]) / lenAB * self.inflation_line_segement
-            c_y = self.obstacles[i+1][1] + (self.obstacles[i+1][1] - self.obstacles[i][1]) / lenAB * self.inflation_line_segement
+            c_x = self.obstacles[i+1][0] + (self.obstacles[i+1][0] - self.obstacles[i][0]) / lenAB * 1.0
+            c_y = self.obstacles[i+1][1] + (self.obstacles[i+1][1] - self.obstacles[i][1]) / lenAB * 1.0
 
-            d_x = self.obstacles[i][0] + (self.obstacles[i][0] - self.obstacles[i+1][0]) / lenAB * self.inflation_line_segement
-            d_y = self.obstacles[i][1] + (self.obstacles[i][1] - self.obstacles[i+1][1]) / lenAB * self.inflation_line_segement
+            d_x = self.obstacles[i][0] + (self.obstacles[i][0] - self.obstacles[i+1][0]) / lenAB * 1.0
+            d_y = self.obstacles[i][1] + (self.obstacles[i][1] - self.obstacles[i+1][1]) / lenAB * 1.0
 
             self.obstacles[i][0] = c_x
             self.obstacles[i][1] = c_y
