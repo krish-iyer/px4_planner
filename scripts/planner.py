@@ -6,7 +6,7 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, PoseStamped
-from aepl_planner.srv import target
+from px4_planner.srv import target
 import threading
 import time
 from mavros_msgs.srv import SetMode, CommandBool
@@ -76,14 +76,7 @@ class Planner:
         return math.degrees(math.atan((point1[1] - point2[1])/(point1[0] - point2[0])))
 
     def execute_goal(self):
-        # check if current location to goal intersect with any walls
-        # if yes then overcome first obstacle and then check again iteractively
-        # if no then go direct to goal
-        # more number of dodging
-        # update obstacle after every goal achieved
-        
 
-        print("number of obastacles : {}".format(len(self.obstacles)))
         nearest = []
         while(self.final_goal_reached() == False):
             print("############# final goal not reached refresing obstacle list.............")
@@ -418,19 +411,16 @@ class Planner:
     def orientation(self, p, q, r):
         
         val = (float(q[1] - p[1]) * (r[0] - q[0])) - (float(q[0] - p[0]) * (r[1] - q[1]))
+
         if (val > 0):
-            
             return 1
         elif (val < 0):
-            
             return 2
         else:
-            
             return 0
 
     def doIntersect(self, points):
         
-
         o1 = self.orientation(points[0], points[2], points[1])
         o2 = self.orientation(points[0], points[2], points[3])
         o3 = self.orientation(points[1], points[3], points[0])
@@ -458,10 +448,6 @@ if __name__ == '__main__':
     rospy.init_node('px4_planner', anonymous=True)
     DroneObj = DroneControl()
     plannerObj = Planner(DroneObj)
-    # while(len(plannerObj.current_loc) == 0):
-    #     time.sleep(0.1)
-    # DroneObj.cmd.pose.position.x = plannerObj.current_loc[0]
-    # DroneObj.cmd.pose.position.x = plannerObj.current_loc[1]
     DroneObj.cmd.pose.position.z = 1.0
     DroneObj.arm(True)
     time.sleep(1)
@@ -469,5 +455,4 @@ if __name__ == '__main__':
     r = rospy.Rate(20) # 10hz 
     while not rospy.is_shutdown():
         DroneObj.goal_loc_pub.publish(DroneObj.cmd)
-
         r.sleep()
