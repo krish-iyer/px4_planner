@@ -23,12 +23,14 @@ find_package(Boost REQUIRED COMPONENTS system)
 add_service_files(
   FILES
   target.srv
+  target_queue.srv
 )
 
 generate_messages(
    DEPENDENCIES
    std_msgs  # Or other packages containing msgs
    std_srvs
+   geometry_msgs
    sensor_msgs
 )
 # catkin_python_setup()
@@ -52,11 +54,13 @@ include_directories( include ${catkin_INCLUDE_DIRS})
 
 catkin_install_python(PROGRAMS
   scripts/planner.py
+  scripts/test_waypoints.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(PROGRAMS
 scripts/planner.py
+scripts/test_waypoints.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

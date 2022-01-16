@@ -6,7 +6,7 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, PoseStamped
-from px4_planner.srv import target
+from px4_planner.srv import target, target_queue
 import threading
 import time
 from mavros_msgs.srv import SetMode, CommandBool
@@ -36,10 +36,12 @@ class Planner:
         self.robot_pose_marker = rospy.Publisher("/features/robot_marker", Marker, queue_size=1)
         self.goal_marker = rospy.Publisher("/features/goal_marker", Marker, queue_size=1)
         self.target_srv = rospy.Service('/px4_planner/target', target, self.goal)
+        self.target_queue_srv = rospy.Service('/px4_planner/target_queue', target_queue, self.goal_queue)
         self.obstacles = [[]]
         self.goal = []
         self.drone = drone
         self.execute_goal_th = threading.Thread()
+        self.execute_goal_queue_th = threading.Thread()
         self.execute_goal_th_status = False
         self.current_loc = []
         self.current_goal = []
@@ -51,6 +53,7 @@ class Planner:
         self.final_goal_resolution = rospy.get_param("~final_goal_resolution")
         self.inflation_line_segement = rospy.get_param("~inflation_line_segement")
         self.interm_goal_distance = rospy.get_param("~interm_goal_distance")
+        self.target_cordinate_queue = []
 
     def current_goal_reached(self):
 
@@ -189,6 +192,46 @@ class Planner:
 
             self.execute_goal_th_status = True
             self.execute_goal_th.start()
+
+            return True
+
+        return False
+
+    def execute_goal_queue(self):
+
+
+        for coordinates in self.target_cordinate_queue:
+
+            while(self.execute_goal_th_status):
+                time.sleep(0.5)
+
+            self.obstacle_obstruct = False
+
+            self.execute_goal_th = threading.Thread(target=self.execute_goal)
+
+            if(len(self.goal)):
+                del self.goal[:]
+
+            self.goal = [-coordinates.y, -coordinates.x, coordinates.z]
+
+            self.execute_goal_th_status = True
+            self.execute_goal_th.start()
+
+    def goal_queue(self, req):
+
+        rospy.loginfo("[PX4_PLANNER] Goal Queue Request Received ")
+        # print("###Queue: {}".format(req))
+
+        self.target_cordinate_queue = []
+        
+        for r in req.coordinates:
+            print("###each Queue: {}".format(r))
+            self.target_cordinate_queue.append(r)
+
+        if(self.execute_goal_th_status == False):
+
+            self.execute_goal_queue_th = threading.Thread(target=self.execute_goal_queue)
+            self.execute_goal_queue_th.start()
 
             return True
 
