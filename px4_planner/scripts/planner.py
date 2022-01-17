@@ -47,12 +47,12 @@ class Planner:
         self.current_goal = []
         self.obstacle_obstruct = False
         self.roam = False
-        self.nearest_goal_offset = rospy.get_param("~nearest_goal_offset")
-        self.nearest_goal_min = rospy.get_param("~nearest_goal_min")
-        self.interm_goal_resolution = rospy.get_param("~interm_goal_resolution")
-        self.final_goal_resolution = rospy.get_param("~final_goal_resolution")
-        self.inflation_line_segement = rospy.get_param("~inflation_line_segement")
-        self.interm_goal_distance = rospy.get_param("~interm_goal_distance")
+        self.nearest_goal_offset = 0.5#rospy.get_param("~nearest_goal_offset")
+        self.nearest_goal_min = 4#rospy.get_param("~nearest_goal_min")
+        self.interm_goal_resolution = 0.5#rospy.get_param("~interm_goal_resolution")
+        self.final_goal_resolution = 0.1#rospy.get_param("~final_goal_resolution")
+        # self.inflation_line_segement = rospy.get_param("~inflation_line_segement")
+        # self.interm_goal_distance = rospy.get_param("~interm_goal_distance")
         self.target_cordinate_queue = []
 
     def current_goal_reached(self):
@@ -122,8 +122,8 @@ class Planner:
 
                     lenAB = math.sqrt(math.pow(self.current_loc[0] - self.goal[0], 2.0) + math.pow(self.current_loc[1] - self.goal[1], 2.0))
 
-                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * 2.0
-                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * 2.0
+                    c_x = self.current_loc[0] - (self.current_loc[0] - self.goal[0]) / lenAB * 3.0
+                    c_y = self.current_loc[1] - (self.current_loc[1] - self.goal[1]) / lenAB * 3.0
 
                     self.drone.cmd.pose.position.x = c_x
                     self.drone.cmd.pose.position.y = c_y
@@ -203,7 +203,9 @@ class Planner:
         for coordinates in self.target_cordinate_queue:
 
             while(self.execute_goal_th_status):
-                time.sleep(0.5)
+                time.sleep(5)
+            
+            time.sleep(5)
 
             self.obstacle_obstruct = False
 

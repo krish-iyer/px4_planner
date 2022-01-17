@@ -22,7 +22,7 @@ if __name__ == '__main__':
     rospy.init_node('test_waypoint', anonymous=True)
 
     test_wapoints_obj = test_wapoints()
-    points = [[-1,-6,0], [0,0,0], [-1,7,0], [-1,-6,0]]
+    points = [[3,5.5,0], [3,3,0], [-1.5,5,0], [0, 1, 0],[0.5,-3,0], [0,0,0]]
     test_wapoints_obj.add_waypoints(points)
     print(test_wapoints_obj.call_waypoint_server())
 
